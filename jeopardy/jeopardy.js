@@ -1,92 +1,142 @@
+// jeopardy.js
+
+// Constants
 const NUM_CATEGORIES = 6;
 const NUM_QUESTIONS_PER_CAT = 5;
-const API_BASE_URL = "https://jservice.io/api";
+const API_BASE_URL = "https://projects.springboard.com/jeopardy/api";
 
+// Data structure to hold categories and clues
 let categories = [];
 
-/** Get NUM_CATEGORIES random category from API. Returns array of category ids */
+/**
+ * Fetches NUM_CATEGORIES random category IDs from the API.
+ * @returns {Promise<number[]>} Array of category IDs
+ */
 async function getCategoryIds() {
-    const response = await axios.get(`${API_BASE_URL}/categories`, {
-        params: { count: 100 }
-    });
-    const catIds = _.sampleSize(response.data, NUM_CATEGORIES).map(c => c.id);
-    return catIds;
+    try {
+        const response = await axios.get(`${API_BASE_URL}/categories?count=100`);
+        const allCategories = response.data;
+        const randomCategories = _.sampleSize(allCategories, NUM_CATEGORIES);
+        return randomCategories.map(cat => cat.id);
+    } catch (error) {
+        console.error("Error fetching category IDs:", error);
+        alert("Failed to load categories. Please try again.");
+    }
 }
 
-/** Return object with data about a category */
+/**
+ * Fetches category data for a given category ID.
+ * @param {number} catId - Category ID
+ * @returns {Promise<Object>} Category object with title and clues
+ */
 async function getCategory(catId) {
-    const response = await axios.get(`${API_BASE_URL}/category`, {
-        params: { id: catId }
-    });
-    const clues = _.sampleSize(response.data.clues, NUM_QUESTIONS_PER_CAT).map(clue => ({
-        question: clue.question,
-        answer: clue.answer,
-        showing: null
-    }));
-    return { title: response.data.title, clues };
+    try {
+        const response = await axios.get(`${API_BASE_URL}/category?id=${catId}`);
+        const data = response.data;
+        const allClues = data.clues;
+        const randomClues = _.sampleSize(allClues, NUM_QUESTIONS_PER_CAT);
+        const clues = randomClues.map(clue => ({
+            question: clue.question,
+            answer: clue.answer,
+            showing: null
+        }));
+        return { title: data.title, clues };
+    } catch (error) {
+        console.error(`Error fetching category data for ID ${catId}:`, error);
+        alert("Failed to load category data. Please try again.");
+    }
 }
 
-/** Fill the HTML table with categories & clues */
+/**
+ * Populates the HTML table with categories and clues.
+ */
 async function fillTable() {
-    const $thead = $("thead").empty();
-    const $tbody = $("tbody").empty();
+    // Clear existing table content
+    $("#categories-row").empty();
+    $("#clues-body").empty();
 
-    // Header row
-    const $tr = $("<tr>");
-    for (let cat of categories) {
-        $tr.append($("<th>").text(cat.title));
+    // Populate category headers
+    for (let category of categories) {
+        $("#categories-row").append(`<th>${category.title}</th>`);
     }
-    $thead.append($tr);
 
-    // Question rows
-    for (let clueIdx = 0; clueIdx < NUM_QUESTIONS_PER_CAT; clueIdx++) {
-        const $tr = $("<tr>");
-        for (let catIdx = 0; catIdx < NUM_CATEGORIES; catIdx++) {
-            const $td = $("<td>")
-                .attr("id", `${catIdx}-${clueIdx}`)
-                .text("?");
-            $tr.append($td);
+    // Populate clue cells
+    for (let i = 0; i < NUM_QUESTIONS_PER_CAT; i++) {
+        const $row = $("<tr>");
+        for (let j = 0; j < NUM_CATEGORIES; j++) {
+            $row.append(`<td data-category="${j}" data-clue="${i}">?</td>`);
         }
-        $tbody.append($tr);
+        $("#clues-body").append($row);
     }
 }
 
-/** Handle click on a clue cell */
+/**
+ * Handles click events on clue cells to show question or answer.
+ * @param {Event} evt - Click event
+ */
 function handleClick(evt) {
-    const id = evt.target.id;
-    const [catIdx, clueIdx] = id.split("-").map(Number);
-    const clue = categories[catIdx].clues[clueIdx];
+    const $cell = $(evt.target);
+    const catIndex = $cell.data("category");
+    const clueIndex = $cell.data("clue");
+    const clue = categories[catIndex].clues[clueIndex];
 
     if (clue.showing === null) {
-        $(`#${id}`).text(clue.question);
+        // Show question
+        $cell.text(clue.question);
         clue.showing = "question";
     } else if (clue.showing === "question") {
-        $(`#${id}`).text(clue.answer);
+        // Show answer
+        $cell.text(clue.answer);
         clue.showing = "answer";
     }
+    // If already showing answer, do nothing
 }
 
-/** Show loading spinner */
+/**
+ * Displays the loading spinner and disables the restart button.
+ */
 function showLoadingView() {
-    $("#jeopardy").hide();
     $("#loading").show();
+    $("#restart").prop("disabled", true);
 }
 
-/** Hide loading spinner */
+/**
+ * Hides the loading spinner and enables the restart button.
+ */
 function hideLoadingView() {
     $("#loading").hide();
-    $("#jeopardy").show();
+    $("#restart").prop("disabled", false);
 }
 
-/** Set up game */
+/**
+ * Initializes the game by fetching categories and clues, then populating the table.
+ */
 async function setupAndStart() {
     showLoadingView();
-    const catIds = await getCategoryIds();
-    categories = await Promise.all(catIds.map(getCategory));
+    const categoryIds = await getCategoryIds();
+    categories = [];
+
+    for (let id of categoryIds) {
+        const category = await getCategory(id);
+        if (category) {
+            categories.push(category);
+        }
+    }
+
     await fillTable();
     hideLoadingView();
 }
 
-/** Event handlers */
-$("#start").on("click", setupAndStart);
-$("#jeopardy").on("click", "td", handleClick);
+/**
+ * Sets up event listeners and starts the game on page load.
+ */
+$(document).ready(function () {
+    // Start the game
+    setupAndStart();
+
+    // Handle clue cell clicks
+    $("#jeopardy").on("click", "td", handleClick);
+
+    // Handle restart button click
+    $("#restart").on("click", setupAndStart);
+});

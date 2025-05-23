@@ -1,57 +1,69 @@
+/* jeopardy.css */
+
+/* Base styles */
 body {
   font-family: 'Copse', serif;
-  background-color: #001f3f;
-  color: white;
+  background-color: #f0f0f0;
   text-align: center;
+  margin: 0;
   padding: 20px;
 }
 
-#start {
-  font-size: 20px;
-  padding: 10px 20px;
+#game-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Heading */
+h1 {
+  color: #115ff4;
   margin-bottom: 20px;
-  background-color: #0074D9;
+}
+
+/* Game board table */
+#jeopardy {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+/* Category headers */
+#jeopardy thead th {
+  background-color: #060ce9;
+  color: white;
+  padding: 10px;
+  border: 2px solid #fff;
+}
+
+/* Clue cells */
+#jeopardy tbody td {
+  background-color: #115ff4;
+  color: white;
+  padding: 20px;
+  border: 2px solid #fff;
+  cursor: pointer;
+  font-size: 1.2em;
+}
+
+/* Hover effect for clue cells */
+#jeopardy tbody td:hover {
+  background-color: #060ce9;
+}
+
+/* Restart button */
+#restart {
+  padding: 10px 20px;
+  font-size: 1em;
+  background-color: #28a200;
   color: white;
   border: none;
+  cursor: pointer;
   border-radius: 5px;
-  cursor: pointer;
 }
 
-#start:hover {
-  background-color: #005fa3;
-}
-
+/* Loading spinner */
 #loading {
-  font-size: 24px;
-  display: none;
-  margin-bottom: 20px;
-}
-
-#jeopardy {
-  margin: 0 auto;
-  border-collapse: collapse;
-  width: 90%;
-  max-width: 1000px;
-}
-
-#jeopardy th,
-#jeopardy td {
-  border: 2px solid #0074D9;
-  padding: 20px;
-  background-color: #003366;
-  color: white;
-  width: 16.66%;
-  height: 100px;
-  vertical-align: middle;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-#jeopardy th {
-  background-color: #005fa3;
-  font-size: 20px;
-}
-
-#jeopardy td:hover {
-  background-color: #004080;
+  font-size: 1.2em;
+  color: #74119c;
+  margin-top: 10px;
 }
