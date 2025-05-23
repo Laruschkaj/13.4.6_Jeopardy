@@ -4,40 +4,23 @@
 <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Jeopardy Game</title>
-      <!-- Google Fonts for styling -->
+      <meta http-equiv="X-UA-Compatible" content="ie=edge">
+      <title>Jeopardy</title>
       <link href="https://fonts.googleapis.com/css?family=Copse&display=swap" rel="stylesheet">
-      <!-- Link to external CSS -->
       <link rel="stylesheet" href="jeopardy.css">
 </head>
 
 <body>
-      <div id="game-container">
-            <h1>Jeopardy!</h1>
-            <!-- Game board table -->
-            <table id="jeopardy">
-                  <thead>
-                        <tr id="categories-row">
-                              <!-- Category headers will be inserted here -->
-                        </tr>
-                  </thead>
-                  <tbody id="clues-body">
-                        <!-- Clue cells will be inserted here -->
-                  </tbody>
-            </table>
-            <!-- Restart button -->
-            <button id="restart">Restart Game</button>
-            <!-- Loading spinner -->
-            <div id="loading" style="display: none;">Loading...</div>
-      </div>
+      <button id="start">Start / Restart</button>
+      <div id="loading">Loading...</div>
+      <table id="jeopardy">
+            <thead></thead>
+            <tbody></tbody>
+      </table>
 
-      <!-- jQuery library -->
       <script src="https://unpkg.com/jquery"></script>
-      <!-- Axios for HTTP requests -->
-      <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-      <!-- Lodash for utility functions -->
+      <script src="https://unpkg.com/axios/dist/axios.js"></script>
       <script src="https://unpkg.com/lodash"></script>
-      <!-- Link to external JavaScript -->
       <script src="jeopardy.js"></script>
 </body>
 
