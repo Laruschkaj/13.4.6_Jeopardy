@@ -2,47 +2,110 @@
 
 /* Base styles */
 body {
-  font-family: 'Copse', serif;
+  font-family: 'Roboto Condensed', sans-serif;
+  /* Changed font to Roboto Condensed */
   background-color: #f0f0f0;
   text-align: center;
   margin: 0;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  justify-content: center;
 }
 
 #game-container {
   max-width: 900px;
   margin: 0 auto;
+  width: 100%;
 }
 
 /* Heading */
 h1 {
+  font-family: 'Copse', serif;
+  /* Keep original font for title for game feel */
   color: #115ff4;
   margin-bottom: 20px;
+  font-size: 3.5em;
+  /* Slightly larger title */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Restart button (now at the top) */
+#start {
+  padding: 12px 25px;
+  font-size: 1.1em;
+  background-color: #28a200;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  margin-bottom: 20px;
+  /* Add margin below button */
+}
+
+#start:hover {
+  background-color: #1e7d00;
 }
 
 /* Game board table */
 #jeopardy {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  /* No margin below table, as button is now above */
+  table-layout: fixed;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Category headers */
 #jeopardy thead th {
   background-color: #060ce9;
   color: white;
-  padding: 10px;
+  padding: 15px 5px;
   border: 2px solid #fff;
+  text-transform: uppercase;
+  font-size: 1.1em;
+  /* Consistent with before */
+  min-height: 80px;
+  vertical-align: middle;
+  word-wrap: break-word;
+  width: calc(100% / 6);
+  /* Explicitly set width for 6 columns */
+  box-sizing: border-box;
+  display: table-cell;
+  /* Ensure consistent display behavior */
+  white-space: normal;
+  /* Allow text to wrap naturally */
+  overflow: hidden;
+  /* Hide overflow */
+  text-overflow: ellipsis;
+  /* Optional: for single-line ellipsis, use with white-space: nowrap; */
 }
 
 /* Clue cells */
 #jeopardy tbody td {
   background-color: #115ff4;
   color: white;
-  padding: 20px;
+  padding: 10px;
   border: 2px solid #fff;
   cursor: pointer;
-  font-size: 1.2em;
+  font-size: 1.1em;
+  /* Slightly smaller font for clues */
+  height: 120px;
+  /* Fixed height for clue cells */
+  vertical-align: middle;
+  /* Center content vertically */
+  text-align: center;
+  overflow: hidden;
+  position: relative;
+  width: calc(100% / 6);
+  /* Explicitly set width for 6 columns */
+  box-sizing: border-box;
+  display: table-cell;
+  /* Ensure consistent display behavior */
 }
 
 /* Hover effect for clue cells */
@@ -50,20 +113,80 @@ h1 {
   background-color: #060ce9;
 }
 
-/* Restart button */
-#start {
-  padding: 10px 20px;
-  font-size: 1em;
+/* Style for the content INSIDE the cells (questions/answers/?) */
+#jeopardy tbody td .clue-content {
+  display: flex;
+  /* Use flexbox to center content */
+  justify-content: center;
+  /* Horizontally center */
+  align-items: center;
+  /* Vertically center */
+  height: 100%;
+  /* Take full height of parent td */
+  width: 100%;
+  /* Take full width of parent td */
+  text-align: center;
+  white-space: normal;
+  /* Allow text to wrap naturally */
+  word-wrap: break-word;
+  /* Break long words */
+  word-break: break-word;
+  /* Even more aggressive word breaking */
+  overflow: hidden;
+  /* Hide overflowing content */
+  line-height: 1.3;
+  /* Adjust line height for better readability of wrapped text */
+  padding: 2px;
+  /* Small inner padding for text inside the span */
+  box-sizing: border-box;
+  /* Include padding in dimensions */
+}
+
+/* Styling for the initial '?' (when showing is null) */
+#jeopardy tbody td .clue-initial {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  width: 60px;
+  /* Size of the circle */
+  height: 60px;
+  /* Size of the circle */
+  font-size: 2.5em;
+  /* Larger '?' */
+  font-weight: bold;
+  color: #115ff4;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease-in-out;
+  /* Ensure the '?' is centered within its circle */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Style for answered cells (green background) */
+#jeopardy tbody td.answered {
   background-color: #28a200;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Styling for answered cell content */
+#jeopardy tbody td.answered .clue-content {
   color: white;
-  border: none;
-  cursor: pointer;
-  border-radius: 5px;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 /* Loading spinner */
 #loading {
-  font-size: 1.2em;
+  font-size: 1.5em;
   color: #74119c;
-  margin-top: 10px;
+  margin-top: 20px;
+  font-weight: bold;
+  min-height: 120px;
+  /* Give loading text some height */
+  display: flex;
+  /* Use flexbox to center */
+  justify-content: center;
+  align-items: center;
 }

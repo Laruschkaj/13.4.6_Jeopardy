@@ -4,7 +4,7 @@
 const NUM_CATEGORIES = 6;
 const NUM_QUESTIONS_PER_CAT = 5;
 
-// === THE FIX: Use the CORS-friendly Rithm School API directly! ===
+// === The reliable API endpoint ===
 const JEOPARDY_API_BASE = "https://rithm-jeopardy.herokuapp.com/api"; // No proxy needed!
 
 // Array to store the fetched category data, including clues
@@ -24,14 +24,11 @@ async function getCategoryIds() {
 
     while (validCategoryIds.size < NUM_CATEGORIES && attempts < maxAttempts) {
         attempts++;
-        console.log(`Attempt ${attempts} to fetch categories.`);
+        console.log(`Attempt ${attempts} to fetch categories. Valid found: ${validCategoryIds.size}/${NUM_CATEGORIES}`);
         try {
-            // Directly call the Rithm API without any proxy
             const res = await axios.get(`${JEOPARDY_API_BASE}/categories`, {
                 params: { count: 100 },
             });
-
-            console.log("Raw response data from categories API:", res.data);
 
             if (!Array.isArray(res.data) || res.data.length === 0) {
                 console.warn("API did not return an array of categories or returned an empty array:", res.data);
@@ -39,14 +36,13 @@ async function getCategoryIds() {
             }
 
             const candidates = _.shuffle(res.data);
-            console.log(`Workspaceed ${candidates.length} candidate categories from this batch.`);
+            console.log(`Fetched ${candidates.length} candidate categories from this batch.`);
 
             for (let cat of candidates) {
                 if (validCategoryIds.size >= NUM_CATEGORIES) break;
                 if (validCategoryIds.has(cat.id)) continue;
 
                 try {
-                    // Directly call the Rithm API for category details
                     const catDataResponse = await axios.get(`${JEOPARDY_API_BASE}/category`, {
                         params: { id: cat.id },
                     });
@@ -70,7 +66,7 @@ async function getCategoryIds() {
     }
 
     if (validCategoryIds.size < NUM_CATEGORIES) {
-        console.error(`Could not find enough valid categories after ${attempts} attempts. Found: ${validCategoryIds.size}, Needed: ${NUM_QUESTIONS_PER_CAT}`); // Corrected needed value to NUM_QUESTIONS_PER_CAT
+        console.error(`Could not find enough valid categories after ${attempts} attempts. Found: ${validCategoryIds.size}, Needed: ${NUM_CATEGORIES}. This game might not be able to start.`);
     } else {
         console.log(`Successfully found ${validCategoryIds.size} valid category IDs.`);
     }
@@ -86,9 +82,8 @@ async function getCategoryIds() {
  * @throws {Error} If the category data is invalid or insufficient.
  */
 async function getCategory(catId) {
-    console.log(`Workspaceing detailed data for category ID: ${catId}`);
+    console.log(`Fetching detailed data for category ID: ${catId}`);
     try {
-        // Directly call the Rithm API for category details
         const response = await axios.get(`${JEOPARDY_API_BASE}/category`, {
             params: { id: catId },
         });
@@ -102,7 +97,7 @@ async function getCategory(catId) {
         const clues = _.sampleSize(response.data.clues, NUM_QUESTIONS_PER_CAT).map(clue => ({
             question: clue.question,
             answer: clue.answer,
-            showing: null,
+            showing: null, // 'null' for hidden, 'question' for question shown, 'answer' for answer shown
         }));
 
         console.log(`Successfully processed category ID: ${catId}, Title: ${response.data.title}, Clues: ${clues.length}`);
@@ -122,26 +117,29 @@ async function fillTable() {
     const $thead = $("thead").empty();
     const $tbody = $("tbody").empty();
 
-    const $tr = $("<tr>");
+    // Create the header row for category titles
+    const $trHeader = $("<tr>");
     for (let cat of categories) {
         if (cat && cat.title) {
-            $tr.append($("<th>").text(cat.title));
+            $trHeader.append($("<th>").text(cat.title));
         } else {
-            // Fallback for missing title, though with validation above, this should be rare
             console.warn("Skipping category with missing title during table header creation:", cat);
-            $tr.append($("<th>").text("N/A"));
+            $trHeader.append($("<th>").text("N/A"));
         }
     }
-    $thead.append($tr);
+    $thead.append($trHeader);
 
+    // Create rows for questions (clues)
     for (let clueIdx = 0; clueIdx < NUM_QUESTIONS_PER_CAT; clueIdx++) {
         const $tr = $("<tr>");
         for (let catIdx = 0; catIdx < NUM_CATEGORIES; catIdx++) {
-            // Check if the category and the specific clue exist before displaying '?'
             const clueExists = categories[catIdx] && categories[catIdx].clues && categories[catIdx].clues[clueIdx];
             const $td = $("<td>")
-                .attr("id", `${catIdx}-${clueIdx}`)
-                .text(clueExists ? "?" : "N/A"); // Display '?' if clue exists, otherwise "N/A"
+                .attr("id", `${catIdx}-${clueIdx}`);
+
+            // Wrap the content in a span for specific styling of '?'
+            $td.html(`<span class="clue-content ${clueExists ? 'clue-initial' : ''}">${clueExists ? "?" : "N/A"}</span>`);
+
             $tr.append($td);
         }
         $tbody.append($tr);
@@ -157,25 +155,28 @@ async function fillTable() {
  * @param {Event} evt - The click event object.
  */
 function handleClick(evt) {
-    const id = evt.target.id;
+    const $td = $(evt.target).closest('td'); // Ensure we target the td, not the span inside
+    const id = $td.attr("id");
     const [catIdx, clueIdx] = id.split("-").map(Number);
 
-    // Safely access the clue object using optional chaining and nullish coalescing
     const clue = categories?.[catIdx]?.clues?.[clueIdx];
 
-    if (!clue) {
-        console.warn(`No valid clue object found for clicked cell ID: ${id}. This cell might not have valid data.`);
-        return; // Exit if the clue object is not found (e.g., if cell was "N/A" or data is missing)
+    // If no clue or if already showing answer, do nothing (cell is disabled by CSS pointer-events)
+    if (!clue || clue.showing === "answer") {
+        console.warn(`Cell ${id} is already answered or has no valid clue. No action.`);
+        return;
     }
 
-    console.log(`Clicked clue: Cat ${catIdx}, Clue ${clueIdx}. Current showing: ${clue.showing}`);
+    const $clueContentSpan = $td.find('.clue-content'); // Get the span inside the td
 
     if (clue.showing === null) {
-        $(`#${id}`).text(clue.question);
+        $clueContentSpan.text(clue.question);
+        $clueContentSpan.removeClass('clue-initial'); // Remove '?' specific styling
         clue.showing = "question";
     } else if (clue.showing === "question") {
-        $(`#${id}`).text(clue.answer);
+        $clueContentSpan.text(clue.answer);
         clue.showing = "answer";
+        $td.addClass('answered'); // Add class for green background and disabled clicks
     }
 }
 
@@ -184,8 +185,9 @@ function handleClick(evt) {
  */
 function showLoadingView() {
     console.log("Showing loading view.");
-    $("#jeopardy").hide();
-    $("#loading").show();
+    $("#jeopardy").hide(); // Hide the table initially
+    $("#loading").show(); // Show loading message
+    $("#start").prop('disabled', true); // Disable start button during loading
 }
 
 /**
@@ -193,8 +195,9 @@ function showLoadingView() {
  */
 function hideLoadingView() {
     console.log("Hiding loading view.");
-    $("#loading").hide();
-    $("#jeopardy").show();
+    $("#loading").hide(); // Hide loading message
+    $("#jeopardy").show(); // Show the table after loading
+    $("#start").prop('disabled', false); // Enable start button after loading
 }
 
 /**
@@ -206,13 +209,21 @@ async function setupAndStart() {
     try {
         showLoadingView();
 
+        // Reset categories array for a new game
+        categories = [];
+
+        // When starting a new game, we need to completely clear and reset the table
+        // This is handled by fillTable after new categories are fetched.
+        // We only need to ensure the HTML elements are ready to be re-filled.
+        $("thead").empty();
+        $("tbody").empty();
+
         const catIds = await getCategoryIds();
         if (catIds.length < NUM_CATEGORIES) {
-            throw new Error(`Not enough valid categories returned from API. Found ${catIds.length}, needed ${NUM_CATEGORIES}.`);
+            throw new Error(`Not enough valid categories returned from API. Found ${catIds.length}, needed ${NUM_CATEGORIES}. The game cannot start.`);
         }
-        console.log(`Workspaceed ${catIds.length} category IDs:`, catIds);
+        console.log(`Fetched ${catIds.length} category IDs:`, catIds);
 
-        // Fetch detailed data for all selected categories concurrently using Promise.all
         categories = await Promise.all(catIds.map(getCategory));
         console.log("All categories details fetched:", categories);
 
@@ -221,8 +232,12 @@ async function setupAndStart() {
     } catch (err) {
         console.error("Failed to set up game:", err);
         alert(`Sorry, we had trouble loading the game: ${err.message || "An unknown error occurred"}. Please try again.`);
+        // Ensure table is hidden and button re-enabled even on error
+        $("#jeopardy").hide();
+        $("#loading").hide();
+        $("#start").prop('disabled', false);
     } finally {
-        hideLoadingView();
+        hideLoadingView(); // This will show the table if setup was successful
     }
 }
 
@@ -231,5 +246,7 @@ $("#start").on("click", setupAndStart);
 $("#jeopardy").on("click", "td", handleClick);
 
 $(document).ready(function () {
-    // setupAndStart(); // Uncomment this to auto-start on page load
+    // Game will not auto-start. Table is hidden by default in HTML.
+    // The user must click the 'Start / Restart Game' button.
+    // No initial setupAndStart() call here.
 });
